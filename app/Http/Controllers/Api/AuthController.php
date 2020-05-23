@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -13,15 +14,11 @@ class AuthController extends Controller
     {
         if (!$request->filled('email') || !$request->filled('password'))
             return ['error' => 'INVALID_REQUEST'];
-
-        $user = User::where('email', $request->email && Hash::check('password', $request->password))->first();
-        $api_token = $this->random(80);
-        if ($user) {
-            $user->api_token = $api_token;
-            $user->save();
-            return ['exist' => true, 'user' => $user,'api_token' => $api_token];
-        }
-
+        if (Auth::attempt(['email' => request('email'), 'password' => request('password')])) {
+            $user = Auth::User();
+            $user->api_token = \Str::random(80);
+            return response()->json(['data' => $user, 'api_token' => $user->api_token, 'success' => 1], 200);
+        } else
         return ['user' => null, 'exist' => false];
     }
 
